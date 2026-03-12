@@ -21,6 +21,10 @@ class ProviderError(AIEngineError):
     """Erreur liée à un provider LLM."""
 
 
+class LLMError(ProviderError):
+    """Erreur lors de l'appel à un LLM."""
+
+
 class ProviderNotFoundError(ProviderError):
     """Provider introuvable."""
 
@@ -59,15 +63,15 @@ class APIKeyMissingError(ProviderError):
 
 
 class AgentError(AIEngineError):
-    """Erreur liée à un agent."""
+    """Erreur liée aux agents."""
 
 
 class AgentNotFoundError(AgentError):
     """Agent introuvable."""
 
-    def __init__(self, identifier: str) -> None:
-        self.identifier = identifier
-        super().__init__(f"Agent '{identifier}' not found.")
+    def __init__(self, agent_id: str) -> None:
+        self.agent_id = agent_id
+        super().__init__(f"Agent '{agent_id}' not found.")
 
 
 class AgentDisabledError(AgentError):
