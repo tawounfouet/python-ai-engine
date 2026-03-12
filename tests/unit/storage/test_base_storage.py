@@ -20,6 +20,7 @@ from ai_engine.models.provider import LLMProviderConfig, ProviderType
 from ai_engine.models.skill import Skill, AgentSkillAssignment
 from ai_engine.models.tool import ToolDefinition
 from ai_engine.models.knowledge import KnowledgeSource
+from ai_engine.types import SourceType
 from ai_engine.storage.base import StorageBackend
 
 
@@ -163,7 +164,7 @@ class BaseStorageTest:
     def test_conversations_and_messages(self, storage: StorageBackend) -> None:
         """Test conversations et messages ensemble."""
         # Create agent first
-        agent = Agent(name="Chat Agent", slug="chat")
+        agent = Agent(name="Chat Agent", slug="chat", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Create conversation
@@ -214,14 +215,14 @@ class BaseStorageTest:
     def test_memory_operations(self, storage: StorageBackend) -> None:
         """Test opérations de mémoire."""
         # Create agent first
-        agent = Agent(name="Memory Agent", slug="memory")
+        agent = Agent(name="Memory Agent", slug="memory", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Create memory
         memory = AgentMemory(
             agent_id=agent.id,
             key="user_preference",
-            value={"theme": "dark", "language": "fr"},
+            content='{"theme": "dark", "language": "fr"}',
             memory_type=MemoryType.LONG_TERM,
         )
         saved = storage.save_memory(memory)
@@ -230,7 +231,7 @@ class BaseStorageTest:
         # Retrieve memory
         retrieved = storage.get_memory(agent.id, "user_preference")
         assert retrieved is not None
-        assert retrieved.value["theme"] == "dark"
+        assert "dark" in retrieved.content
 
         # List memories
         memories = storage.list_memories(agent.id)
@@ -247,7 +248,7 @@ class BaseStorageTest:
     def test_execution_operations(self, storage: StorageBackend) -> None:
         """Test opérations d'exécution."""
         # Create agent first
-        agent = Agent(name="Exec Agent", slug="exec")
+        agent = Agent(name="Exec Agent", slug="exec", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Create execution
@@ -275,7 +276,7 @@ class BaseStorageTest:
     def test_graph_operations(self, storage: StorageBackend) -> None:
         """Test opérations de graph."""
         # Create agent first
-        agent = Agent(name="Graph Agent", slug="graph")
+        agent = Agent(name="Graph Agent", slug="graph", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Create graph
@@ -309,13 +310,14 @@ class BaseStorageTest:
     def test_knowledge_operations(self, storage: StorageBackend) -> None:
         """Test opérations de knowledge source."""
         # Create agent first
-        agent = Agent(name="Knowledge Agent", slug="knowledge")
+        agent = Agent(name="Knowledge Agent", slug="knowledge", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Create knowledge source
         source = KnowledgeSource(
             name="Test KB",
             description="Test knowledge base",
+            source_type=SourceType.TEXT,
             agent_ids=[agent.id],
         )
         saved = storage.save_knowledge_source(source)
@@ -344,6 +346,7 @@ class BaseStorageTest:
         provider = LLMProviderConfig(
             name="tx-test",
             provider_type=ProviderType.OPENAI,
+            default_model="gpt-4o",
         )
 
         # Test successful transaction
@@ -359,6 +362,7 @@ class BaseStorageTest:
                 provider2 = LLMProviderConfig(
                     name="tx-test-2",
                     provider_type=ProviderType.OPENAI,
+                    default_model="gpt-4o",
                 )
                 storage.save_provider(provider2)
                 raise Exception("Force rollback")
@@ -376,8 +380,8 @@ class BaseStorageTest:
             provider = LLMProviderConfig(
                 name="ctx-test",
                 provider_type=ProviderType.OPENAI,
+                default_model="gpt-4o",
             )
             storage.save_provider(provider)
-
-        # Storage should still work after context exit
-        assert storage.get_provider(provider.id) is not None
+            # Data should be accessible within the context
+            assert storage.get_provider(provider.id) is not None

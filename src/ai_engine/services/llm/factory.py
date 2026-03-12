@@ -50,6 +50,16 @@ def get_llm_client(provider_config: LLMProviderConfig) -> LLMClient:
 
             return OllamaClient(provider_config)
 
+        elif provider_config.provider_type == ProviderType.GROQ:
+            from ai_engine.services.llm.groq import GroqClient
+
+            return GroqClient(provider_config)
+
+        elif provider_config.provider_type == ProviderType.GEMINI:
+            from ai_engine.services.llm.gemini import GeminiClient
+
+            return GeminiClient(provider_config)
+
         elif provider_config.provider_type == ProviderType.CUSTOM:
             # Pour les providers custom, on pourrait avoir une logique différente
             # ou déléguer à un registry de providers personnalisés
@@ -61,7 +71,7 @@ def get_llm_client(provider_config: LLMProviderConfig) -> LLMClient:
         else:
             raise UnsupportedProviderError(
                 f"Unsupported provider type: {provider_config.provider_type}. "
-                f"Supported types: {', '.join(t.value for t in [ProviderType.OPENAI, ProviderType.ANTHROPIC, ProviderType.OLLAMA])}"
+                f"Supported types: {', '.join(t.value for t in [ProviderType.OPENAI, ProviderType.ANTHROPIC, ProviderType.OLLAMA, ProviderType.GROQ, ProviderType.GEMINI])}"
             )
 
     except ImportError as e:
@@ -99,6 +109,16 @@ def list_available_providers() -> list[ProviderType]:
             name="test-ollama",
             provider_type=ProviderType.OLLAMA,
             default_model="llama3",
+        ),
+        ProviderType.GROQ: LLMProviderConfig(
+            name="test-groq",
+            provider_type=ProviderType.GROQ,
+            default_model="llama-3.1-70b-versatile",
+        ),
+        ProviderType.GEMINI: LLMProviderConfig(
+            name="test-gemini",
+            provider_type=ProviderType.GEMINI,
+            default_model="gemini-pro",
         ),
     }
 

@@ -210,7 +210,7 @@ class TestAgentService:
         assert conversation.agent_id == agent.id
         assert conversation.title == "Test Chat"
 
-    @patch("ai_engine.services.llm.factory.get_llm_client")
+    @patch("ai_engine.services.agent.get_llm_client")
     def test_chat_success(
         self,
         mock_get_llm_client: Mock,

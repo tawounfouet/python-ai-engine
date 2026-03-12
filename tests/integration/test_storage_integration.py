@@ -32,6 +32,7 @@ class TestStorageInteroperability:
         provider = LLMProviderConfig(
             name="migration-test",
             provider_type=ProviderType.OPENAI,
+            default_model="gpt-4",
             config={"model": "gpt-4"},
         )
 
@@ -143,8 +144,8 @@ class TestStorageInteroperability:
         provider = LLMProviderConfig(
             name="consistency-test",
             provider_type=ProviderType.OPENAI,
-            config={"model": "gpt-4", "temperature": 0.7},
-            secrets={"api_key": "sk-test"},
+            default_model="gpt-4",
+            metadata={"model": "gpt-4", "temperature": 0.7},
         )
 
         # Test sur InMemoryStorage
@@ -168,7 +169,7 @@ class TestStorageInteroperability:
 
         assert memory_provider.id == sqlite_provider.id == provider.id
         assert memory_provider.name == sqlite_provider.name == provider.name
-        assert memory_provider.config == sqlite_provider.config == provider.config
+        assert memory_provider.metadata == sqlite_provider.metadata == provider.metadata
 
         assert memory_by_name.id == sqlite_by_name.id == provider.id
 
@@ -181,8 +182,8 @@ class TestStorageInteroperability:
         sqlite_storage = SQLiteStorage(":memory:")
 
         # Créer des agents avec des IDs différents
-        agent1 = Agent(name="Agent Memory", slug="agent-memory")
-        agent2 = Agent(name="Agent SQLite", slug="agent-sqlite")
+        agent1 = Agent(name="Agent Memory", slug="agent-memory", provider_id="test-provider")
+        agent2 = Agent(name="Agent SQLite", slug="agent-sqlite", provider_id="test-provider")
 
         # Opérations simultanées
         memory_storage.save_agent(agent1)
@@ -239,6 +240,7 @@ class TestStorageEdgeCases:
         provider = LLMProviderConfig(
             name="filter-test",
             provider_type=ProviderType.OPENAI,
+            default_model="gpt-4o",
             is_active=True,
         )
         storage.save_provider(provider)
@@ -247,6 +249,7 @@ class TestStorageEdgeCases:
             name="Filter Agent",
             slug="filter",
             role=AgentRole.ASSISTANT,
+            provider_id=provider.id,
             is_active=True,
         )
         storage.save_agent(agent)
@@ -266,7 +269,7 @@ class TestStorageEdgeCases:
         storage = SQLiteStorage(":memory:")
 
         # Créer un agent
-        agent = Agent(name="Bulk Agent", slug="bulk")
+        agent = Agent(name="Bulk Agent", slug="bulk", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Créer une conversation
@@ -308,13 +311,15 @@ class TestStorageEdgeCases:
         provider = LLMProviderConfig(
             name="测试-Provider-🤖",
             provider_type=ProviderType.OPENAI,
-            config={"description": "Émojis: 🚀🎯 Unicode: café naïve résumé"},
+            default_model="gpt-4o",
+            metadata={"description": "Émojis: 🚀🎯 Unicode: café naïve résumé"},
         )
         storage.save_provider(provider)
 
         agent = Agent(
             name="Agent François 🇫🇷",
             slug="agent-français",
+            provider_id=provider.id,
             system_prompt="Bonjour! Je suis un assistant qui parle français. J'utilise des accents: é, è, à, ç",
         )
         storage.save_agent(agent)
@@ -322,7 +327,7 @@ class TestStorageEdgeCases:
         # Vérifier que tout est correctement sauvé et récupéré
         retrieved_provider = storage.get_provider(provider.id)
         assert retrieved_provider.name == "测试-Provider-🤖"
-        assert "🚀🎯" in retrieved_provider.config["description"]
+        assert "🚀🎯" in retrieved_provider.metadata["description"]
 
         retrieved_agent = storage.get_agent(agent.id)
         assert retrieved_agent.name == "Agent François 🇫🇷"

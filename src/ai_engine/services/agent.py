@@ -23,24 +23,34 @@ Usage:
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any
 
 from ai_engine.exceptions import AgentError, AgentNotFoundError, ProviderNotFoundError
 from ai_engine.models.agent import Agent, AgentConfig
 from ai_engine.models.conversation import Conversation
 from ai_engine.models.message import Message
-from ai_engine.models.provider import LLMProviderConfig
-from ai_engine.services.llm import LLMClient, LLMRequest, get_llm_client
+from ai_engine.services.llm import LLMRequest, get_llm_client
 from ai_engine.storage.base import StorageBackend
 from ai_engine.types import AgentRole, MessageRole
+
+if TYPE_CHECKING:
+    from ai_engine.tools.registry import ToolRegistry
 
 
 class AgentService:
     """Service principal pour la gestion des agents."""
 
-    def __init__(self, storage: StorageBackend) -> None:
+    def __init__(
+        self,
+        storage: StorageBackend,
+        tool_registry: ToolRegistry | None = None,
+    ) -> None:
+        from ai_engine.tools.executor import ToolExecutor as _ToolExecutor
+        from ai_engine.tools.registry import ToolRegistry as _ToolRegistry
+
         self.storage = storage
+        self.tool_registry = tool_registry or _ToolRegistry()
+        self.tool_executor = _ToolExecutor(self.tool_registry)
 
     def create_agent(
         self,
@@ -203,6 +213,9 @@ class AgentService:
         """
         Envoie un message à un agent et retourne sa réponse.
 
+        Si l'agent a des tools enregistrés et que le LLM demande des tool_calls,
+        la boucle tool-calling est exécutée automatiquement.
+
         Args:
             agent_id: ID de l'agent
             message: Message utilisateur
@@ -240,17 +253,30 @@ class AgentService:
 
         # Appeler le LLM
         llm_client = get_llm_client(provider)
-        llm_request = LLMRequest(
-            messages=messages,
-            temperature=llm_options.get("temperature", agent.config.temperature),
-            max_tokens=llm_options.get(
-                "max_tokens", agent.config.max_tokens_per_response
-            ),
-            **llm_options,
-        )
 
         try:
-            llm_response = llm_client.complete(llm_request)
+            # Si des tools sont enregistrés et que l'agent les supporte → boucle tool-calling
+            has_tools = (
+                agent.config.enable_tools
+                and len(self.tool_registry) > 0
+            )
+
+            if has_tools:
+                llm_response = self.tool_executor.run_tool_loop(
+                    client=llm_client,
+                    messages=messages,
+                    max_iterations=agent.config.max_iterations,
+                    conversation_id=conversation.id,
+                )
+            else:
+                llm_request = LLMRequest(
+                    messages=messages,
+                    temperature=llm_options.get("temperature", agent.config.temperature),
+                    max_tokens=llm_options.get(
+                        "max_tokens", agent.config.max_tokens_per_response
+                    ),
+                )
+                llm_response = llm_client.complete(llm_request)
 
             # Créer le message de réponse
             assistant_message = Message(

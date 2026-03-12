@@ -42,6 +42,12 @@ class ProviderType(StrEnum):
     BEDROCK = "bedrock"
     VERTEX_AI = "vertex_ai"
 
+    # Fast inference
+    GROQ = "groq"
+
+    # Google
+    GEMINI = "gemini"
+
     # Specialized
     VENICE = "venice"
     ZAI = "zai"

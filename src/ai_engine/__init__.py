@@ -75,6 +75,9 @@ from ai_engine.models.tool import ToolDefinition
 from ai_engine.storage.base import StorageBackend
 from ai_engine.storage.memory import InMemoryStorage
 from ai_engine.storage.sqlite import SQLiteStorage
+
+# ── Tools ──
+from ai_engine.tools import ToolExecutor, ToolRegistry
 from ai_engine.types import (
     AgentRole,
     ConversationStatus,
@@ -114,6 +117,9 @@ __all__ = [
     "StorageBackend",
     "InMemoryStorage",
     "SQLiteStorage",
+    # Tools
+    "ToolRegistry",
+    "ToolExecutor",
     # Models — Provider
     "LLMProviderConfig",
     "ProviderCapabilities",

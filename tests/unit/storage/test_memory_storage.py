@@ -32,6 +32,7 @@ class TestInMemoryStorage(BaseStorageTest):
         provider = LLMProviderConfig(
             name="test-isolation",
             provider_type=ProviderType.OPENAI,
+            default_model="gpt-4o",
         )
         storage1.save_provider(provider)
 
@@ -47,7 +48,7 @@ class TestInMemoryStorage(BaseStorageTest):
 
         from ai_engine.models.agent import Agent
 
-        agent = Agent(name="Persistence Test", slug="persist")
+        agent = Agent(name="Persistence Test", slug="persist", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Faire quelques opérations
@@ -68,6 +69,7 @@ class TestInMemoryStorage(BaseStorageTest):
         provider = LLMProviderConfig(
             name="tx-noop-test",
             provider_type=ProviderType.OPENAI,
+            default_model="gpt-4o",
         )
 
         # Les transactions n'ont aucun effet sur InMemoryStorage
@@ -88,7 +90,7 @@ class TestInMemoryStorage(BaseStorageTest):
 
         from ai_engine.models.agent import Agent
 
-        agent = Agent(name="Close Test", slug="close")
+        agent = Agent(name="Close Test", slug="close", provider_id="test-provider")
         storage.save_agent(agent)
 
         # Close ne devrait rien faire
