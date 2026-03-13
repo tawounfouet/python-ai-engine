@@ -19,6 +19,9 @@ uv pip install -e .
 | [03_agent_service.py](03_agent_service.py) | AgentService : créer des agents, conversations, mise à jour, statistiques | Non |
 | [04_tool_system.py](04_tool_system.py) | ToolRegistry + ToolExecutor : enregistrer et exécuter des tools, schémas OpenAI | Non |
 | [05_multi_provider.py](05_multi_provider.py) | Configuration de 6 providers (OpenAI, Anthropic, Ollama, Groq, Gemini), agents spécialisés | Non |
+| [06_pyconnectors_integration.py](06_pyconnectors_integration.py) | Intégration du package local `pyconnectors` : connecteur personnalisé, ConnectorFactory, hooks, pattern de wrapping | Non |
+| [07_logging_system.py](07_logging_system.py) | Système de logging ai_engine : NullHandler, StructuredFormatter, JSONFormatter, LoggingConfigBuilder, logged_operation, QueueHandler async, intégration pyconnectors | Non |
+| [08_agent_connector_logging.py](08_agent_connector_logging.py) | **Intégration complète** : Agent IA + connecteur pyconnectors + logging ai_engine — pipeline fetch → enrich → reason avec traces structurées | Non |
 | [services_example.py](services_example.py) | Exemple basique avec SQLiteStorage (existant) | Oui (chat) |
 
 ## Exécution
