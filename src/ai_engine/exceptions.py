@@ -173,6 +173,54 @@ class StorageConnectionError(StorageError):
 
 
 # ──────────────────────────────────────────────
+# Skill Errors
+# ──────────────────────────────────────────────
+
+
+class SkillError(AIEngineError):
+    """Erreur liée à un skill."""
+
+
+class SkillNotFoundError(SkillError):
+    """Skill introuvable dans le registre."""
+
+    def __init__(self, identifier: str) -> None:
+        self.identifier = identifier
+        super().__init__(f"Skill '{identifier}' not found in registry.")
+
+
+class SkillExecutionError(SkillError):
+    """Erreur lors de l'exécution d'un skill."""
+
+    def __init__(self, skill_key: str, detail: str) -> None:
+        self.skill_key = skill_key
+        self.detail = detail
+        super().__init__(f"Error executing skill '{skill_key}': {detail}")
+
+
+class SkillConfigurationError(SkillError):
+    """Erreur de configuration d'un skill."""
+
+
+# ──────────────────────────────────────────────
+# Event Errors
+# ──────────────────────────────────────────────
+
+
+class EventError(AIEngineError):
+    """Erreur liée au système d'événements."""
+
+
+class EventHandlerError(EventError):
+    """Erreur dans un handler d'événement."""
+
+    def __init__(self, event_type: str, detail: str) -> None:
+        self.event_type = event_type
+        self.detail = detail
+        super().__init__(f"Handler error for event '{event_type}': {detail}")
+
+
+# ──────────────────────────────────────────────
 # Dependency Errors
 # ──────────────────────────────────────────────
 

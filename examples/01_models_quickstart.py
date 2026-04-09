@@ -32,6 +32,9 @@ from ai_engine.logging import get_logger, configure_logging, LoggingConfig
 
 import asyncio
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Charge les variables depuis .env
 
 
 # Configurer le logging avec un format structuré et couleurs
@@ -156,6 +159,7 @@ async def main():
 
     # ── 4. Service LLM pour appel API réel ──────────────────────────────────────
 
+    response = None
     try:
         # Créer le client LLM à partir du provider
         logger.debug(
@@ -348,8 +352,12 @@ async def main():
         order=1,
         input_data={"prompt": msg_user.content},
         output_data={"response": msg_assistant.content[:100] + "..."},
-        tokens_used=response.usage.total_tokens if response.usage else 0,
-        duration_ms=int(response.response_time_ms) if response.response_time_ms else 0,
+        tokens_used=response.usage.total_tokens if (response and response.usage) else 0,
+        duration_ms=(
+            int(response.response_time_ms)
+            if (response and response.response_time_ms)
+            else 0
+        ),
     )
 
     logger.info(

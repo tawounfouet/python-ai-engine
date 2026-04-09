@@ -233,3 +233,48 @@ class IndexStatus(StrEnum):
     INDEXING = "indexing"
     INDEXED = "indexed"
     FAILED = "failed"
+
+
+# ──────────────────────────────────────────────
+# Event Types
+# ──────────────────────────────────────────────
+
+
+class EventType(StrEnum):
+    """Types d'événements émis par l'EventBus."""
+
+    # Agent lifecycle
+    AGENT_CREATED = "agent.created"
+    AGENT_UPDATED = "agent.updated"
+    AGENT_DELETED = "agent.deleted"
+
+    # Conversation lifecycle
+    CONVERSATION_STARTED = "conversation.started"
+    CONVERSATION_ENDED = "conversation.ended"
+
+    # Message lifecycle
+    MESSAGE_SENT = "message.sent"
+    MESSAGE_RECEIVED = "message.received"
+
+    # Tool lifecycle
+    TOOL_CALLED = "tool.called"
+    TOOL_SUCCEEDED = "tool.succeeded"
+    TOOL_FAILED = "tool.failed"
+
+    # LLM lifecycle
+    LLM_REQUEST_STARTED = "llm.request.started"
+    LLM_REQUEST_COMPLETED = "llm.request.completed"
+    LLM_REQUEST_FAILED = "llm.request.failed"
+
+    # Skill lifecycle
+    SKILL_STARTED = "skill.started"
+    SKILL_COMPLETED = "skill.completed"
+    SKILL_FAILED = "skill.failed"
+
+    # Execution lifecycle
+    EXECUTION_STARTED = "execution.started"
+    EXECUTION_COMPLETED = "execution.completed"
+    EXECUTION_FAILED = "execution.failed"
+
+    # Custom / user-defined
+    CUSTOM = "custom"
