@@ -243,33 +243,100 @@ curl -N -X POST http://localhost:8000/api/chat/stream \
 
 ### Django Adapter (Phase 5.3)
 
-```python
-# pip install ai-engine[django]
+```bash
+pip install ai-engine[django]
+```
 
+**1 — Declare the app and configure settings**
+
+```python
 # settings.py
 INSTALLED_APPS = [
-    ...
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
     "rest_framework",
-    "ai_engine.adapters.django",
+    "ai_engine.adapters.django",   # ← add this
+    ...
 ]
 
-AI_ENGINE = {"EVENT_BUS_ENABLED": True}  # relay Django signals ↔ EventBus
+AI_ENGINE = {
+    "EVENT_BUS_ENABLED": True,  # relay Django signals ↔ ai_engine EventBus
+}
+```
 
+**2 — Mount the URL patterns**
+
+```python
 # urls.py
 from django.urls import path, include
-from ai_engine.adapters.django.urls import urlpatterns as ai_urls
+from ai_engine.adapters.django.urls import urlpatterns as ai_engine_urls
 
 urlpatterns = [
-    path("api/ai/", include(ai_urls)),
+    ...
+    path("api/ai/", include((ai_engine_urls, "ai_engine"))),
 ]
 ```
 
+**3 — Create the tables**
+
 ```bash
-# Create tables
 python manage.py migrate
 ```
 
-**Routes disponibles** (même surface que FastAPI) :
+**4 — Use `DjangoORMStorage` directly in your own views / services**
+
+```python
+# myapp/views.py
+from ai_engine.adapters.django import DjangoORMStorage
+from ai_engine.services import AgentService
+from ai_engine.models.provider import LLMProviderConfig
+from ai_engine.types import ProviderType
+
+storage = DjangoORMStorage()
+svc = AgentService(storage)
+
+# Register a provider once (e.g. in a management command or AppConfig.ready())
+provider = storage.save_provider(LLMProviderConfig(
+    name="OpenAI GPT-4o",
+    provider_type=ProviderType.OPENAI,
+    default_model="gpt-4o",
+    api_key="sk-...",
+    is_default=True,
+))
+
+# Create an agent
+agent = svc.create_agent(
+    name="Support Bot",
+    provider_id=provider.id,
+    system_prompt="You are a helpful customer support agent.",
+)
+
+# Chat — conversation history is persisted automatically via the ORM
+response, conversation = svc.chat(
+    agent_id=agent.id,
+    message="How do I reset my password?",
+)
+print(response.content)
+```
+
+**5 — Call the REST API** (mounted at `/api/ai/` above)
+
+```bash
+# List agents
+curl http://localhost:8000/api/ai/agents/
+
+# Create a provider
+curl -X POST http://localhost:8000/api/ai/providers/ \
+     -H "Content-Type: application/json" \
+     -d '{"name":"OpenAI","provider_type":"openai","default_model":"gpt-4o","api_key":"sk-..."}'
+
+# Chat
+curl -X POST http://localhost:8000/api/ai/chat/ \
+     -H "Content-Type: application/json" \
+     -d '{"agent_id":"<id>","message":"Bonjour !"}'
+```
+
+**Available routes**
 
 | Resource | Endpoints |
 |----------|-----------|
@@ -278,8 +345,9 @@ python manage.py migrate
 | Conversations | `GET/POST /conversations/`, `GET/DELETE /conversations/{id}/`, `GET /conversations/{id}/messages/` |
 | Chat | `POST /chat/` (sync) |
 
-> `DjangoORMStorage` utilise l'ORM Django avec le pattern *colonnes d'index + JSONField* pour chaque modèle Pydantic.  
-> Toutes les 4 tables sont déclarées sous `app_label = "ai_engine"` et créées via `migrate`.
+> `DjangoORMStorage` uses the *index columns + `JSONField`* pattern — each table stores
+> filterable index columns alongside a `data` JSON blob that holds the full Pydantic model.
+> All 4 tables live under `app_label = "ai_engine"` and are created by `migrate`.
 
 ---
 
@@ -299,7 +367,8 @@ The extraction of this engine from the original Django monolith is structured in
 | **5.3** | Django Adapter | ✅ Complete |
 | **Phase 6** | Robust Test Coverage & PyPI Publishing | ⏳ Upcoming |
 
-For full architecture details, see [`docs/implementation.md`](docs/implementation.md) and [`docs/etat_avancement.md`](docs/etat_avancement.md).
+For full architecture details, see [`docs/implementation.md`](docs/implementation.md) and [`docs/etat_avancement.md`](docs/etat_avancement.md).  
+For the full release history, see [`docs/changelog/`](docs/changelog/README.md).
 
 ---
 
