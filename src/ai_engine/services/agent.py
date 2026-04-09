@@ -88,13 +88,15 @@ class AgentService:
             config = AgentConfig()
 
         # Créer l'agent
+        _slug_raw = kwargs.pop("slug", None)
+        slug = _slug_raw if _slug_raw is not None else name.lower().replace(" ", "-")
         agent = Agent(
             name=name,
             provider_id=provider_id,
             system_prompt=system_prompt,
             role=role,
             config=config,
-            slug=kwargs.get("slug", name.lower().replace(" ", "-")),
+            slug=slug,
             **kwargs,
         )
 
@@ -256,10 +258,7 @@ class AgentService:
 
         try:
             # Si des tools sont enregistrés et que l'agent les supporte → boucle tool-calling
-            has_tools = (
-                agent.config.enable_tools
-                and len(self.tool_registry) > 0
-            )
+            has_tools = agent.config.enable_tools and len(self.tool_registry) > 0
 
             if has_tools:
                 llm_response = self.tool_executor.run_tool_loop(
@@ -271,7 +270,9 @@ class AgentService:
             else:
                 llm_request = LLMRequest(
                     messages=messages,
-                    temperature=llm_options.get("temperature", agent.config.temperature),
+                    temperature=llm_options.get(
+                        "temperature", agent.config.temperature
+                    ),
                     max_tokens=llm_options.get(
                         "max_tokens", agent.config.max_tokens_per_response
                     ),
