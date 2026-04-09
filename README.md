@@ -13,7 +13,7 @@ A standalone, framework-agnostic Python package providing a robust foundation fo
 - 🛠 **Tool System**: `BaseTool` ABC for defining custom tools + four ready-to-use concrete tools: `CalculatorTool`, `DuckDuckGoSearchTool`, `SerperSearchTool`, `HttpGetTool`, `HttpPostTool`.
 - 🧩 **Skills System**: `BaseSkill` ABC for high-level agent capabilities + `SkillRegistry` for dynamic registration, discovery, and tool-requirement validation.
 - 📡 **EventBus**: Lightweight in-process event bus with sync/async handler support, wildcard listeners, middleware, and error isolation. Fully decouples internal components without Django Signals.
-- 🔌 **Framework Adapters**: Effortlessly embed the AI Engine into any application using drop-in adapters. **CLI** (Typer + Rich) and **FastAPI** (REST + SSE streaming) adapters ship in Phase 5. Django adapter coming in Phase 5.3.
+- 🔌 **Framework Adapters**: Effortlessly embed the AI Engine into any application using drop-in adapters. **CLI** (Typer + Rich), **FastAPI** (REST + SSE streaming), and **Django** (DRF + ORM storage) adapters all ship in Phase 5.
 
 ---
 
@@ -241,6 +241,48 @@ curl -N -X POST http://localhost:8000/api/chat/stream \
 
 ---
 
+### Django Adapter (Phase 5.3)
+
+```python
+# pip install ai-engine[django]
+
+# settings.py
+INSTALLED_APPS = [
+    ...
+    "rest_framework",
+    "ai_engine.adapters.django",
+]
+
+AI_ENGINE = {"EVENT_BUS_ENABLED": True}  # relay Django signals ↔ EventBus
+
+# urls.py
+from django.urls import path, include
+from ai_engine.adapters.django.urls import urlpatterns as ai_urls
+
+urlpatterns = [
+    path("api/ai/", include(ai_urls)),
+]
+```
+
+```bash
+# Create tables
+python manage.py migrate
+```
+
+**Routes disponibles** (même surface que FastAPI) :
+
+| Resource | Endpoints |
+|----------|-----------|
+| Providers | `GET/POST /providers/`, `GET/PATCH/DELETE /providers/{id}/` |
+| Agents | `GET/POST /agents/`, `GET/PATCH/DELETE /agents/{id}/` |
+| Conversations | `GET/POST /conversations/`, `GET/DELETE /conversations/{id}/`, `GET /conversations/{id}/messages/` |
+| Chat | `POST /chat/` (sync) |
+
+> `DjangoORMStorage` utilise l'ORM Django avec le pattern *colonnes d'index + JSONField* pour chaque modèle Pydantic.  
+> Toutes les 4 tables sont déclarées sous `app_label = "ai_engine"` et créées via `migrate`.
+
+---
+
 ## 🗺️ Migration Roadmap (Status)
 
 The extraction of this engine from the original Django monolith is structured into 6 phases:
@@ -251,10 +293,10 @@ The extraction of this engine from the original Django monolith is structured in
 | **Phase 2** | Storage Layer (Interfaces & Backends) | ✅ Complete |
 | **Phase 3** | Services Layer (LLM Factory & Agent Service) | ✅ Complete |
 | **Phase 4** | Tool System, Skills & EventBus | ✅ Complete |
-| **Phase 5** | Framework Adapters (Django, FastAPI, CLI) | 🔄 In Progress |
+| **Phase 5** | Framework Adapters (Django, FastAPI, CLI) | ✅ Complete |
 | **5.1** | CLI Adapter (Typer + Rich) | ✅ Complete |
 | **5.2** | FastAPI Adapter | ✅ Complete |
-| **5.3** | Django Adapter | ⏳ Upcoming |
+| **5.3** | Django Adapter | ✅ Complete |
 | **Phase 6** | Robust Test Coverage & PyPI Publishing | ⏳ Upcoming |
 
 For full architecture details, see [`docs/implementation.md`](docs/implementation.md) and [`docs/etat_avancement.md`](docs/etat_avancement.md).
@@ -275,6 +317,9 @@ uv run pytest tests/unit/adapters/cli/ -v
 # Run only FastAPI adapter tests (Phase 5.2)
 uv run pytest tests/unit/adapters/test_fastapi/ -v
 
+# Run only Django adapter tests (Phase 5.3)
+uv run pytest tests/unit/adapters/test_django/ -v
+
 # Run only Phase 4 tests (tools, events, skills)
 uv run pytest tests/unit/tools/ tests/unit/events/ tests/unit/skills/ -v
 
@@ -285,7 +330,7 @@ uv run python examples/10_cli_adapter.py
 uv run uvicorn examples.11_fastapi_adapter:app --reload
 ```
 
-**Current coverage**: 629 tests passing, 0 failures (+ 1 expected xfail).
+**Current coverage**: 691 tests passing, 0 failures (+ 1 expected xfail).
 
 ---
 
@@ -303,12 +348,12 @@ ai_engine/
 │   ├── adapters/
 │   │   ├── cli/         # CLI adapter — Typer + Rich (Phase 5.1) ✅
 │   │   ├── fastapi/     # FastAPI adapter — REST + SSE (Phase 5.2) ✅
-│   │   └── django/      # Django adapter (Phase 5.3, upcoming)
+│   │   └── django/      # Django adapter — DRF + ORM (Phase 5.3) ✅
 │   ├── types.py         # All StrEnum types (ProviderType, EventType, …)
 │   ├── exceptions.py    # Full exception hierarchy
 │   └── config.py        # Settings (pydantic-settings)
 ├── tests/
-│   └── unit/            # Unit tests per module (629 tests)
+│   └── unit/            # Unit tests per module (691 tests)
 ├── examples/            # Runnable usage examples (01–10)
 └── docs/                # Architecture docs, progress tracker, changelogs
 ```
