@@ -53,6 +53,13 @@ dev = [
     "ruff>=0.3",
     "mypy>=1.8",
 ]
+cli = [
+    "rich>=14.3.3",
+    "typer>=0.24.1",
+]
+
+[project.scripts]
+ai-engine = "ai_engine.adapters.cli:app"
 
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]

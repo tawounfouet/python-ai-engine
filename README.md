@@ -165,6 +165,40 @@ await bus.aemit(ToolSucceededEvent(tool_name="search", tool_call_id="tc-2", dura
 
 ---
 
+### CLI Adapter (Phase 5.1)
+
+```bash
+# Installation
+pip install ai-engine[cli]
+
+# Gérer les providers
+ai-engine provider add --name "OpenAI" --type openai --model gpt-4o --key sk-...
+ai-engine provider list
+
+# Créer et lister des agents
+ai-engine agent create --name "Assistant" --provider "OpenAI" --prompt "Tu es un assistant."
+ai-engine agent list
+
+# Chat interactif (REPL)
+ai-engine chat --agent assistant
+
+# Single-shot (scriptable / pipe)
+ai-engine chat --agent assistant --once "Résume ce texte"
+echo "Explique async/await" | ai-engine chat --agent assistant --once
+
+# Historique de conversations
+ai-engine conversation list
+ai-engine conversation history <id>
+
+# Base de données personnalisée
+AI_ENGINE_DB=./prod.db ai-engine agent list
+```
+
+> La variable `AI_ENGINE_DB` (défaut : `ai_engine.db`) pointe vers le fichier SQLite utilisé.
+> Tous les identifiants acceptent l'ID complet, le slug, ou un préfixe d'ID (≥ 4 chars).
+
+---
+
 ## 🗺️ Migration Roadmap (Status)
 
 The extraction of this engine from the original Django monolith is structured into 6 phases:
@@ -175,7 +209,10 @@ The extraction of this engine from the original Django monolith is structured in
 | **Phase 2** | Storage Layer (Interfaces & Backends) | ✅ Complete |
 | **Phase 3** | Services Layer (LLM Factory & Agent Service) | ✅ Complete |
 | **Phase 4** | Tool System, Skills & EventBus | ✅ Complete |
-| **Phase 5** | Framework Adapters (Django, FastAPI, CLI) | ⏳ Upcoming |
+| **Phase 5** | Framework Adapters (Django, FastAPI, CLI) | 🔄 In Progress |
+| **5.1** | CLI Adapter (Typer + Rich) | ✅ Complete |
+| **5.2** | FastAPI Adapter | ⏳ Upcoming |
+| **5.3** | Django Adapter | ⏳ Upcoming |
 | **Phase 6** | Robust Test Coverage & PyPI Publishing | ⏳ Upcoming |
 
 For full architecture details, see [`docs/implementation.md`](docs/implementation.md) and [`docs/etat_avancement.md`](docs/etat_avancement.md).
@@ -190,14 +227,17 @@ The engine is built with a test-first approach. All phases have dedicated unit a
 # Run the full test suite
 uv run pytest tests/ -v
 
+# Run only CLI adapter tests (Phase 5.1)
+uv run pytest tests/unit/adapters/cli/ -v
+
 # Run only Phase 4 tests (tools, events, skills)
 uv run pytest tests/unit/tools/ tests/unit/events/ tests/unit/skills/ -v
 
-# Run the Phase 4 demo script
-uv run python examples/09_phase4_tools_skills_events.py
+# Run the CLI demo script
+uv run python examples/10_cli_adapter.py
 ```
 
-**Current coverage**: 546 tests passing, 0 failures (+ 1 expected xfail).
+**Current coverage**: 581 tests passing, 0 failures (+ 1 expected xfail).
 
 ---
 
@@ -212,12 +252,16 @@ ai_engine/
 │   ├── tools/           # BaseTool ABC + CalculatorTool, SearchTools, HttpTools
 │   ├── skills/          # BaseSkill ABC + SkillRegistry
 │   ├── events/          # EventBus + 20 typed event classes
+│   ├── adapters/
+│   │   ├── cli/         # CLI adapter — Typer + Rich (Phase 5.1) ✅
+│   │   ├── fastapi/     # FastAPI adapter (Phase 5.2, upcoming)
+│   │   └── django/      # Django adapter (Phase 5.3, upcoming)
 │   ├── types.py         # All StrEnum types (ProviderType, EventType, …)
 │   ├── exceptions.py    # Full exception hierarchy
 │   └── config.py        # Settings (pydantic-settings)
 ├── tests/
-│   └── unit/            # Unit tests per module
-├── examples/            # Runnable usage examples (01–09)
+│   └── unit/            # Unit tests per module (581 tests)
+├── examples/            # Runnable usage examples (01–10)
 └── docs/                # Architecture docs, progress tracker, changelogs
 ```
 
